@@ -1,37 +1,57 @@
-import type { Surface } from '../engine'
+import type { SurfaceProfile } from '../engine'
 
-export const SURFACES: Surface[] = [
-  { id: 'mpu', name: 'MPU', width: 300, height: 250, channel: 'display' },
-  { id: 'leaderboard', name: 'Leaderboard', width: 728, height: 90, channel: 'display' },
-  { id: 'mobile-banner', name: 'Mobile banner', width: 320, height: 50, channel: 'display' },
-  { id: 'skyscraper', name: 'Wide skyscraper', width: 160, height: 600, channel: 'display' },
-  { id: 'billboard', name: 'Billboard', width: 970, height: 250, channel: 'display' },
-  { id: 'half-page', name: 'Half page', width: 300, height: 600, channel: 'display' },
-  { id: 'feed-square', name: 'Feed square', width: 1080, height: 1080, channel: 'social' },
-  { id: 'feed-portrait', name: 'Feed portrait', width: 1080, height: 1350, channel: 'social' },
+/**
+ * The four profiles the brief names by name, plus one deliberately undersized
+ * kiosk used to demonstrate priority degradation (branding drops; headline,
+ * hero and CTA hold). Every field here is a real constraint the resolver
+ * reads — none of them are surface ids the resolver branches on, which is
+ * what lets a fifth, unseen profile resolve correctly with no code changes.
+ */
+export const SURFACES: SurfaceProfile[] = [
   {
-    id: 'story',
-    name: 'Story',
-    width: 1080,
-    height: 1920,
-    channel: 'social',
-    safeArea: { top: 180, bottom: 260 },
+    id: 'mobile-portrait',
+    name: 'Mobile — portrait',
+    width: 390,
+    height: 844,
+    safeArea: { top: 47, bottom: 34 },
+    minTapTarget: 44,
+    touchOnly: true,
+    viewingDistance: 'near',
   },
   {
-    id: 'ctv',
-    name: 'Connected TV',
+    id: 'mobile-landscape',
+    name: 'Mobile — landscape',
+    width: 844,
+    height: 390,
+    safeArea: { left: 47, right: 47, bottom: 21 },
+    minTapTarget: 44,
+    touchOnly: true,
+    viewingDistance: 'near',
+  },
+  {
+    id: 'broadcast-lower-third',
+    name: 'Broadcast lower-third',
     width: 1920,
-    height: 1080,
-    channel: 'ctv',
-    safeArea: { top: 54, right: 96, bottom: 54, left: 96 },
+    height: 250,
+    viewingDistance: 'far',
+    minTextSize: 32,
   },
-  { id: 'dooh-portrait', name: 'DOOH portrait', width: 1080, height: 1920, channel: 'dooh' },
-  { id: 'dooh-wide', name: 'DOOH wide', width: 2560, height: 720, channel: 'dooh' },
+  {
+    id: 'square-kiosk',
+    name: 'Square kiosk',
+    width: 1080,
+    height: 1080,
+    minTapTarget: 60,
+    touchOnly: true,
+    viewingDistance: 'near',
+  },
+  {
+    id: 'kiosk-degraded',
+    name: 'Kiosk — tight (degradation demo)',
+    width: 480,
+    height: 480,
+    minTapTarget: 60,
+    touchOnly: true,
+    viewingDistance: 'near',
+  },
 ]
-
-export const CHANNEL_LABEL: Record<Surface['channel'], string> = {
-  display: 'Display',
-  social: 'Social',
-  ctv: 'CTV',
-  dooh: 'DOOH',
-}

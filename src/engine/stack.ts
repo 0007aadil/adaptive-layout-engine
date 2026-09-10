@@ -53,6 +53,21 @@ export function stack(elements: AdElement[], box: Rect, options: StackOptions): 
   let slots = measured as Measured[]
   let used = sum(slots.map((slot) => slot.height))
 
+  // A hard floor (minTapTarget, minTextSize) can inflate a slot past its own
+  // weighted budget even though it measured successfully in isolation. Report
+  // the whole block as overflowing rather than silently spilling past the
+  // track — the caller degrades by priority across all of it, not just
+  // whichever slot happened to be the one that grew.
+  if (used - track > 0.5) {
+    return {
+      ...EMPTY_STACK,
+      overflow: elements.map((el) => ({
+        elementId: el.id,
+        reason: 'Block exceeds its track once minimum sizes are applied',
+      })),
+    }
+  }
+
   // Hand the unclaimed space back from what each slot actually took, so the
   // grown budgets still add up to the track.
   const slack = track - used
