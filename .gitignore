@@ -23,5 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Working notes, not part of the submission
+# Working notes and local tooling, not part of the submission
 CLAUDE.md
+.claude/
