@@ -40,6 +40,51 @@ const LEGAL: FontSpec = {
 
 export const CREATIVES: Creative[] = [
   {
+    id: 'aurora-spatial',
+    name: 'Aurora — Spatial format',
+    palette: {
+      background: '#0f0f0f',
+      foreground: '#ffffff',
+      muted: '#a0a0a0',
+      accent: '#e2703a',
+      onAccent: '#0f0f0f',
+    },
+    elements: [
+      { id: 'logo', role: 'logo', priority: 68, src: '/creatives/mark-aurora.svg', aspect: 4.25 },
+      {
+        id: 'hero',
+        role: 'image',
+        priority: 62,
+        src: '/creatives/hero-dune.svg',
+        aspect: 1.6,
+        focal: { x: 0.58, y: 0.42 },
+      },
+      {
+        id: 'headline',
+        role: 'headline',
+        priority: 100,
+        required: true,
+        text: 'Ads that hold still long enough to be believed',
+        font: DISPLAY,
+      },
+      {
+        id: 'subhead',
+        role: 'subhead',
+        priority: 48,
+        text: 'One spatial creative, delivered to every screen it has to run on.',
+        font: BODY,
+      },
+      { id: 'cta', role: 'cta', priority: 88, text: 'See it live', font: ACTION },
+      {
+        id: 'legal',
+        role: 'legal',
+        priority: 25,
+        text: 'Rendered in-browser. No app install.',
+        font: LEGAL,
+      },
+    ],
+  },
+  {
     id: 'atlas-runner',
     name: 'Atlas — Runner launch',
     palette: {

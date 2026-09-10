@@ -44,29 +44,28 @@ export function Playground() {
     <div className="app">
       <header className="app__head">
         <div>
-          <h1>Adaptive layout engine</h1>
+          <h1>One creative, every surface</h1>
           <p>
-            One creative, {surfaces.length} surfaces. The engine picks a template from the frame,
-            fits the type to the space it has, and sheds the least important element when the message
-            no longer fits.
+            The engine reads the frame it has been given, picks a template, fits the type to the
+            space that is actually there, and sheds the least important element when the message no
+            longer fits. {surfaces.length} surfaces, one definition, no hand-tuned variants.
           </p>
         </div>
         <div className="app__controls">
-          <Field label="Creative">
-            <select
-              className="input"
-              value={creative.id}
-              onChange={(event) =>
-                setCreative(CREATIVES.find((item) => item.id === event.target.value) ?? CREATIVES[0])
-              }
-            >
-              {CREATIVES.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <select
+            className="input"
+            aria-label="Creative"
+            value={creative.id}
+            onChange={(event) =>
+              setCreative(CREATIVES.find((item) => item.id === event.target.value) ?? CREATIVES[0])
+            }
+          >
+            {CREATIVES.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
           <label className="check">
             <input type="checkbox" checked={debug} onChange={(e) => setDebug(e.target.checked)} />
             Show boxes
@@ -75,20 +74,34 @@ export function Playground() {
       </header>
 
       <div className="app__body">
-        <div className="matrix">
-          {layouts.map((layout) => (
-            <SurfaceCard
-              key={layout.surface.id}
-              layout={layout}
-              palette={creative.palette}
-              selected={layout.surface.id === selected.surface.id}
-              debug={debug}
-              onSelect={() => setSelectedId(layout.surface.id)}
-            />
-          ))}
+        <div>
+          <div className="section__head">
+            <h2>Surfaces</h2>
+            <span className="muted">
+              {layouts.filter((layout) => layout.dropped.length === 0).length} of {layouts.length}{' '}
+              carry the whole message
+            </span>
+          </div>
+          <div className="matrix">
+            {layouts.map((layout) => (
+              <SurfaceCard
+                key={layout.surface.id}
+                layout={layout}
+                palette={creative.palette}
+                selected={layout.surface.id === selected.surface.id}
+                debug={debug}
+                onSelect={() => setSelectedId(layout.surface.id)}
+              />
+            ))}
+          </div>
         </div>
 
         <aside className="sidebar">
+          <div className="section__head">
+            <h2>Inspector</h2>
+            <span className="muted">select any surface</span>
+          </div>
+
           <Inspector layout={selected} creative={creative} debug={debug} />
 
           <Panel title="Free surface" aside={<span className="panel__aside">drag to stress the engine</span>}>
