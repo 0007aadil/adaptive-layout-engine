@@ -12,27 +12,16 @@ export interface Rect {
   height: number
 }
 
-export type SurfaceChannel = 'display' | 'social' | 'ctv' | 'dooh'
+export type ElementType = 'text' | 'image' | 'button'
 
-export interface Surface {
-  id: string
-  name: string
-  width: number
-  height: number
-  channel: SurfaceChannel
-  /** Chrome that content must stay clear of: player controls, notches, bezels. */
-  safeArea?: Partial<Insets>
-}
-
-export type ElementRole = 'logo' | 'headline' | 'subhead' | 'image' | 'cta' | 'legal'
+/** Semantic role, independent of surface. What the resolver reasons about when it degrades. */
+export type ElementRole = 'primary' | 'secondary' | 'hero' | 'action' | 'branding'
 
 interface ElementBase {
   id: string
   role: ElementRole
-  /** Higher survives longer. Ties break on declaration order. */
+  /** 1 is most important. The resolver drops the highest number first when space runs out. */
   priority: number
-  /** Never dropped, even if the layout ends up overflowing. */
-  required?: boolean
 }
 
 export interface FontSpec {
@@ -48,13 +37,19 @@ export interface FontSpec {
 }
 
 export interface TextElement extends ElementBase {
-  role: 'headline' | 'subhead' | 'cta' | 'legal'
+  type: 'text'
+  text: string
+  font: FontSpec
+}
+
+export interface ButtonElement extends ElementBase {
+  type: 'button'
   text: string
   font: FontSpec
 }
 
 export interface ImageElement extends ElementBase {
-  role: 'image' | 'logo'
+  type: 'image'
   src: string
   /** Intrinsic width / height. */
   aspect: number
@@ -62,7 +57,7 @@ export interface ImageElement extends ElementBase {
   focal?: { x: number; y: number }
 }
 
-export type AdElement = TextElement | ImageElement
+export type AdElement = TextElement | ButtonElement | ImageElement
 
 export interface Palette {
   background: string
@@ -72,11 +67,33 @@ export interface Palette {
   onAccent: string
 }
 
-export interface Creative {
+export interface AdSpec {
   id: string
   name: string
   palette: Palette
   elements: AdElement[]
+}
+
+export type ViewingDistance = 'near' | 'far'
+
+/**
+ * A surface's real constraints, not just its box. The resolver only ever reads
+ * these fields — never a surface id or name — which is what lets an unseen
+ * fifth profile resolve correctly with no code changes.
+ */
+export interface SurfaceProfile {
+  id: string
+  name: string
+  width: number
+  height: number
+  /** Chrome that content must stay clear of: notches, home indicators, bezels. */
+  safeArea?: Partial<Insets>
+  /** Minimum hit area for anything tappable. Enforced on `button` elements. */
+  minTapTarget?: number
+  /** Floor on rendered type size, regardless of an element's own minimum. */
+  minTextSize?: number
+  viewingDistance?: ViewingDistance
+  touchOnly?: boolean
 }
 
 export type TemplateId = 'stack' | 'split' | 'strip' | 'column' | 'overlay'
@@ -104,6 +121,7 @@ export interface ImageRender {
 
 export interface LayoutNode {
   elementId: string
+  type: ElementType
   role: ElementRole
   rect: Rect
   text?: TextRender
@@ -117,7 +135,7 @@ export interface DroppedElement {
 }
 
 export interface LayoutResult {
-  surface: Surface
+  surface: SurfaceProfile
   template: TemplateId
   content: Rect
   nodes: LayoutNode[]

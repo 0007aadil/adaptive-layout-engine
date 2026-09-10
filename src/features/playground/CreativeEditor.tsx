@@ -1,21 +1,24 @@
 import { Field } from '../../components/Field'
 import { Panel } from '../../components/Panel'
-import type { AdElement, Creative, TextElement } from '../../engine'
+import type { AdElement, AdSpec } from '../../engine'
 
 interface Props {
-  creative: Creative
+  spec: AdSpec
   onChange: (id: string, patch: Partial<AdElement>) => void
 }
 
-const isText = (element: AdElement): element is TextElement => 'text' in element
-
-export function CreativeEditor({ creative, onChange }: Props) {
+export function CreativeEditor({ spec, onChange }: Props) {
   return (
-    <Panel title="Creative" aside={<span className="panel__aside">{creative.name}</span>}>
-      {creative.elements.map((element) => (
+    <Panel title="Ad spec" aside={<span className="panel__aside">{spec.name}</span>}>
+      {spec.elements.map((element) => (
         <div className="editor__row" key={element.id}>
-          {isText(element) ? (
-            <Field label={element.role}>
+          {element.type === 'image' ? (
+            <span className="field__label">
+              {element.role}
+              <span className="field__hint">{element.type}</span>
+            </span>
+          ) : (
+            <Field label={element.role} hint={element.type}>
               <textarea
                 className="input"
                 rows={2}
@@ -23,32 +26,27 @@ export function CreativeEditor({ creative, onChange }: Props) {
                 onChange={(event) => onChange(element.id, { text: event.target.value } as Partial<AdElement>)}
               />
             </Field>
-          ) : (
-            <span className="field__label">{element.role}</span>
           )}
 
-          <div className="editor__controls">
-            <Field label="Priority" hint={element.priority}>
-              <input
-                className="range"
-                type="range"
-                min={0}
-                max={100}
-                value={element.priority}
-                onChange={(event) => onChange(element.id, { priority: Number(event.target.value) })}
-              />
-            </Field>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={element.required ?? false}
-                onChange={(event) => onChange(element.id, { required: event.target.checked })}
-              />
-              Required
-            </label>
-          </div>
+          <Field label="Priority" hint={`${element.priority} · ${priorityHint(element.priority)}`}>
+            <input
+              className="range"
+              type="range"
+              min={1}
+              max={5}
+              step={1}
+              value={element.priority}
+              onChange={(event) => onChange(element.id, { priority: Number(event.target.value) })}
+            />
+          </Field>
         </div>
       ))}
     </Panel>
   )
+}
+
+function priorityHint(priority: number): string {
+  if (priority <= 1) return 'never dropped in practice'
+  if (priority === 2) return 'drops after branding'
+  return 'first to drop'
 }

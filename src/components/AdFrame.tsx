@@ -52,7 +52,7 @@ function Node({ node, palette }: { node: LayoutNode; palette: Palette }) {
   }
 
   if (node.image) {
-    if (node.role === 'logo') {
+    if (node.role === 'branding') {
       return (
         <div
           className="ad-node ad-node--logo"
@@ -77,11 +77,11 @@ function Node({ node, palette }: { node: LayoutNode; palette: Palette }) {
 
   if (!node.text) return null
   const { text } = node
-  const isCta = node.role === 'cta'
+  const isButton = node.type === 'button'
 
   return (
     <div
-      className={`ad-node ad-node--text${isCta ? ' ad-node--cta' : ''}`}
+      className={`ad-node ad-node--text${isButton ? ' ad-node--cta' : ''}`}
       style={{
         ...style,
         fontFamily: text.family,
@@ -90,9 +90,9 @@ function Node({ node, palette }: { node: LayoutNode; palette: Palette }) {
         lineHeight: text.lineHeight,
         letterSpacing: `${text.tracking}em`,
         textAlign: text.align,
-        color: isCta ? palette.onAccent : node.role === 'legal' ? palette.muted : palette.foreground,
-        background: isCta ? palette.accent : undefined,
-        borderRadius: isCta ? node.rect.height / 2 : undefined,
+        color: isButton ? palette.onAccent : node.role === 'secondary' ? palette.muted : palette.foreground,
+        background: isButton ? palette.accent : undefined,
+        borderRadius: isButton ? node.rect.height / 2 : undefined,
       }}
     >
       {text.lines.map((line, i) => (

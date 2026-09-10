@@ -1,6 +1,6 @@
 import { AdFrame } from '../../components/AdFrame'
 import { Tag } from '../../components/Tag'
-import { CHANNEL_LABEL } from '../../data/surfaces'
+import { describeConstraints } from '../../lib/constraints'
 import type { LayoutResult, Palette } from '../../engine'
 
 interface Props {
@@ -31,8 +31,10 @@ export function SurfaceCard({ layout, palette, selected, debug, onSelect }: Prop
         </span>
       </div>
       <div className="card__tags">
-        <Tag>{CHANNEL_LABEL[surface.channel]}</Tag>
         <Tag tone="accent">{layout.template}</Tag>
+        {describeConstraints(surface).map((badge) => (
+          <Tag key={badge}>{badge}</Tag>
+        ))}
         {dropped.length > 0 && <Tag tone="warn">-{dropped.length}</Tag>}
       </div>
     </button>

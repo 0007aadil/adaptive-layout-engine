@@ -4,12 +4,12 @@ import type { Overflow } from './stack'
 import { place, selectTemplate, type PlaceContext } from './templates'
 import type {
   AdElement,
-  Creative,
+  AdSpec,
   DroppedElement,
   LayoutNode,
   LayoutResult,
   Rect,
-  Surface,
+  SurfaceProfile,
   TemplateId,
   TextMeasurer,
 } from './types'
@@ -21,10 +21,11 @@ export interface SolveOptions {
 }
 
 /**
- * Places a creative onto a surface, shedding the least important elements until
- * what remains fits. Pure: same inputs and measurer give the same layout.
+ * Places an ad spec onto a surface profile, shedding the least important
+ * elements until what remains fits and every hard constraint is met. Pure:
+ * the same spec, surface and measurer always produce the same layout.
  */
-export function solve(creative: Creative, surface: Surface, options: SolveOptions = {}): LayoutResult {
+export function solve(spec: AdSpec, surface: SurfaceProfile, options: SolveOptions = {}): LayoutResult {
   const measurer = options.measurer ?? createMetricMeasurer()
   const template = options.template ?? selectTemplate(surface)
   const bleed: Rect = { x: 0, y: 0, width: surface.width, height: surface.height }
@@ -35,15 +36,17 @@ export function solve(creative: Creative, surface: Surface, options: SolveOption
     measurer,
     scale: clamp(minSide / 300, 0.7, 4),
     gap: clamp(minSide * 0.035, 6, 40),
+    minTextSize: surface.minTextSize,
+    minTapTarget: surface.minTapTarget,
     bleed,
   }
 
-  let candidates = byPriority(creative.elements)
+  let candidates = byPriority(spec.elements)
   const dropped: DroppedElement[] = []
   const warnings: string[] = []
   let nodes: LayoutNode[] = []
 
-  for (let pass = 0; pass <= creative.elements.length; pass += 1) {
+  for (let pass = 0; pass <= spec.elements.length; pass += 1) {
     const attempt = place(template, candidates, content, ctx)
     if (!attempt.overflow.length) {
       nodes = attempt.nodes
@@ -53,7 +56,7 @@ export function solve(creative: Creative, surface: Surface, options: SolveOption
     const victim = pickVictim(candidates, attempt.overflow)
     if (!victim) {
       nodes = attempt.nodes
-      warnings.push('Required elements alone exceed this surface; content is clipped.')
+      warnings.push('The most important elements alone exceed this surface; content is clipped.')
       break
     }
 
@@ -67,7 +70,7 @@ export function solve(creative: Creative, surface: Surface, options: SolveOption
     })
   }
 
-  warnings.push(...audit(nodes, bleed, content))
+  warnings.push(...audit(nodes, bleed, surface))
 
   return {
     surface,
@@ -80,23 +83,24 @@ export function solve(creative: Creative, surface: Surface, options: SolveOption
   }
 }
 
+/** Most important (lowest priority number) first. */
 function byPriority(elements: AdElement[]): AdElement[] {
-  return [...elements].sort((a, b) => b.priority - a.priority)
+  return [...elements].sort((a, b) => a.priority - b.priority)
 }
 
+/** Least important (highest priority number) among what actually overflowed. */
 function pickVictim(candidates: AdElement[], overflow: Overflow[]): AdElement | undefined {
-  const droppable = candidates.filter((el) => !el.required)
   const blocked = new Set(overflow.map((item) => item.elementId))
-  const inOverflow = droppable.filter((el) => blocked.has(el.id))
-  const pool = inOverflow.length ? inOverflow : droppable
+  const inOverflow = candidates.filter((el) => blocked.has(el.id))
+  const pool = inOverflow.length ? inOverflow : candidates
   return pool.reduce<AdElement | undefined>(
-    (lowest, el) => (!lowest || el.priority < lowest.priority ? el : lowest),
+    (worst, el) => (!worst || el.priority > worst.priority ? el : worst),
     undefined,
   )
 }
 
 /** Invariants the renderer relies on. Surfaced in the UI rather than thrown. */
-function audit(nodes: LayoutNode[], bleed: Rect, content: Rect): string[] {
+function audit(nodes: LayoutNode[], bleed: Rect, surface: SurfaceProfile): string[] {
   const warnings: string[] = []
 
   for (const node of nodes) {
@@ -106,22 +110,27 @@ function audit(nodes: LayoutNode[], bleed: Rect, content: Rect): string[] {
     if (node.image && node.image.coverage < 0.5) {
       warnings.push(`${node.role} is cropped to ${Math.round(node.image.coverage * 100)}% of the source`)
     }
+    if (node.type === 'button' && surface.minTapTarget) {
+      const short = node.rect.height < surface.minTapTarget - 0.5
+      if (short) warnings.push(`${node.role} tap target is below the ${surface.minTapTarget}px minimum`)
+    }
+    if (node.text && surface.minTextSize && node.text.fontSize < surface.minTextSize - 0.5) {
+      warnings.push(`${node.role} text is below the ${surface.minTextSize}px minimum for this viewing distance`)
+    }
   }
 
-  const text = nodes.filter((node) => node.text)
-  for (let i = 0; i < text.length; i += 1) {
-    for (let j = i + 1; j < text.length; j += 1) {
-      if (intersects(text[i].rect, text[j].rect)) {
-        warnings.push(`${text[i].role} and ${text[j].role} overlap`)
+  const boxed = nodes.filter((node) => node.text || node.type === 'button')
+  for (let i = 0; i < boxed.length; i += 1) {
+    for (let j = i + 1; j < boxed.length; j += 1) {
+      if (intersects(boxed[i].rect, boxed[j].rect)) {
+        warnings.push(`${boxed[i].role} and ${boxed[j].role} overlap`)
       }
     }
   }
 
-  if (area(content) === 0) warnings.push('Safe area leaves no usable content box')
   return warnings
 }
 
-/** Bleed art is excluded so the number reads as copy density, not coverage. */
 function fillRatio(nodes: LayoutNode[], content: Rect): number {
   const covered = nodes
     .filter((node) => !node.image?.bleed)

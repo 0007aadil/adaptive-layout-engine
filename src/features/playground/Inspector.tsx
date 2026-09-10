@@ -1,17 +1,18 @@
 import { AdFrame } from '../../components/AdFrame'
 import { Panel } from '../../components/Panel'
 import { Tag } from '../../components/Tag'
-import type { Creative, LayoutResult } from '../../engine'
+import { describeConstraints } from '../../lib/constraints'
+import type { AdSpec, LayoutResult } from '../../engine'
 
 interface Props {
   layout: LayoutResult
-  creative: Creative
+  spec: AdSpec
   debug: boolean
 }
 
-export function Inspector({ layout, creative, debug }: Props) {
+export function Inspector({ layout, spec, debug }: Props) {
   const { surface, nodes, dropped, warnings } = layout
-  const label = (id: string) => creative.elements.find((el) => el.id === id)?.role ?? id
+  const label = (id: string) => spec.elements.find((el) => el.id === id)?.role ?? id
 
   return (
     <Panel
@@ -23,8 +24,18 @@ export function Inspector({ layout, creative, debug }: Props) {
       }
     >
       <div className="inspector__stage">
-        <AdFrame layout={layout} palette={creative.palette} maxSize={360} debug={debug} />
+        <AdFrame layout={layout} palette={spec.palette} maxSize={360} debug={debug} />
       </div>
+
+      {describeConstraints(surface).length > 0 && (
+        <div className="card__tags">
+          {describeConstraints(surface).map((badge) => (
+            <Tag key={badge} tone="accent">
+              {badge}
+            </Tag>
+          ))}
+        </div>
+      )}
 
       <table className="table">
         <thead>
